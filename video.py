@@ -1,4 +1,4 @@
-from moviepy.editor import ColorClip, AudioFileClip
+from moviepy import ColorClip, AudioFileClip
 import os
 
 def create_short(audio_file, output_file):
