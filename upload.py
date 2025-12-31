@@ -8,6 +8,7 @@ from google.auth.transport.requests import Request
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
 VIDEO_FILE = "videos/short.mp4"
+FACT_FILE = "fact.txt"
 
 
 def get_authenticated_service():
@@ -32,28 +33,49 @@ def get_authenticated_service():
     return build("youtube", "v3", credentials=creds)
 
 
+def read_fact():
+    if os.path.exists(FACT_FILE):
+        with open(FACT_FILE, "r") as f:
+            return f.read().strip()
+    return "Mind-Blowing AI Fact"
+
+
+def build_metadata(fact):
+    title = f"🤯 {fact[:60]} #Shorts"
+
+    description = (
+        f"{fact}\n\n"
+        "⚡ Daily AI Facts\n"
+        "🧠 Smart, Short & Addictive\n\n"
+        "#shorts #aifacts #facts #ytshorts #knowledge"
+    )
+
+    tags = [
+        "AI facts",
+        "facts",
+        "shorts",
+        "did you know",
+        "knowledge",
+        "viral shorts",
+        "mind blowing facts"
+    ]
+
+    return title, description, tags
+
+
 def upload_video():
     youtube = get_authenticated_service()
+
+    fact = read_fact()
+    title, description, tags = build_metadata(fact)
 
     request = youtube.videos().insert(
         part="snippet,status",
         body={
             "snippet": {
-                "title": "🤯 Mind-Blowing AI Fact #Shorts",
-                "description": (
-                    "Did you know this amazing fact?\n\n"
-                    "⚡ Daily AI Facts\n"
-                    "🧠 Smart, short & addictive\n\n"
-                    "#shorts #aifacts #facts #knowledge #ytshorts"
-                ),
-                "tags": [
-                    "AI facts",
-                    "facts",
-                    "shorts",
-                    "did you know",
-                    "knowledge",
-                    "viral shorts"
-                ],
+                "title": title,
+                "description": description,
+                "tags": tags,
                 "categoryId": "27"
             },
             "status": {
