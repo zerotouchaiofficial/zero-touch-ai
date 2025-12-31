@@ -1,20 +1,30 @@
-from moviepy.editor import *
+from moviepy.editor import ColorClip, AudioFileClip
+import os
 
-audio = AudioFileClip("voice.mp3")
+def create_short(audio_file, output_file):
+    # Ensure output folder exists
+    os.makedirs("videos", exist_ok=True)
 
-bg = ColorClip(
-    size=(1080, 1920),
-    color=(0, 0, 0),
-    duration=audio.duration
-)
+    # Load audio
+    audio = AudioFileClip(audio_file)
 
-txt = TextClip(
-    open("fact.txt").read(),
-    fontsize=70,
-    color="white",
-    method="caption",
-    size=(1000, None)
-).set_position("center").set_duration(audio.duration)
+    # Create vertical (Shorts) video
+    clip = ColorClip(
+        size=(1080, 1920),
+        color=(0, 0, 0),
+        duration=audio.duration
+    )
 
-final = CompositeVideoClip([bg, txt]).set_audio(audio)
-final.write_videofile("short.mp4", fps=30)
+    clip = clip.set_audio(audio)
+
+    # Export video
+    clip.write_videofile(
+        output_file,
+        fps=24,
+        codec="libx264",
+        audio_codec="aac"
+    )
+
+
+if __name__ == "__main__":
+    create_short("audio/voice.mp3", "videos/short.mp4")
