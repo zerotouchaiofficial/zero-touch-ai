@@ -1,5 +1,5 @@
 import os
-import json
+import base64
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
@@ -9,12 +9,14 @@ VIDEO_FILE = "videos/short.mp4"
 
 
 def get_authenticated_service():
-    token_data = os.environ.get("YOUTUBE_TOKEN_JSON")
-    if not token_data:
-        raise Exception("YOUTUBE_TOKEN_JSON secret missing")
+    b64_token = os.environ.get("YOUTUBE_TOKEN_B64")
+    if not b64_token:
+        raise Exception("YOUTUBE_TOKEN_B64 secret missing")
+
+    token_json = base64.b64decode(b64_token).decode("utf-8")
 
     with open("token.json", "w") as f:
-        f.write(token_data)
+        f.write(token_json)
 
     creds = Credentials.from_authorized_user_file(
         "token.json", SCOPES
@@ -34,7 +36,7 @@ def upload_video():
                 "description": (
                     "Did you know this?\n\n"
                     "🔥 Daily AI Facts\n"
-                    "⚡ Fast. Smart. Viral.\n\n"
+                    "⚡ Zero Touch AI\n\n"
                     "#shorts #facts #aifacts #knowledge #ytshorts"
                 ),
                 "categoryId": "27"
@@ -48,7 +50,7 @@ def upload_video():
     )
 
     response = request.execute()
-    print("UPLOADED:", response["id"])
+    print("UPLOADED VIDEO ID:", response["id"])
 
 
 if __name__ == "__main__":
