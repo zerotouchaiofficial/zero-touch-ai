@@ -1,81 +1,42 @@
 import os
-import pickle
+import json
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-
 VIDEO_FILE = "videos/short.mp4"
-FACT_FILE = "fact.txt"
 
 
 def get_authenticated_service():
-    creds = None
+    token_data = os.environ.get("YOUTUBE_TOKEN_JSON")
+    if not token_data:
+        raise Exception("YOUTUBE_TOKEN_JSON secret missing")
 
-    if os.path.exists("token.json"):
-        with open("token.json", "rb") as token:
-            creds = pickle.load(token)
+    with open("token.json", "w") as f:
+        f.write(token_data)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
-            )
-            creds = flow.run_local_server(port=0)
-
-        with open("token.json", "wb") as token:
-            pickle.dump(creds, token)
-
-    return build("youtube", "v3", credentials=creds)
-
-
-def read_fact():
-    if os.path.exists(FACT_FILE):
-        with open(FACT_FILE, "r") as f:
-            return f.read().strip()
-    return "Mind-Blowing AI Fact"
-
-
-def build_metadata(fact):
-    title = f"🤯 {fact[:60]} #Shorts"
-
-    description = (
-        f"{fact}\n\n"
-        "⚡ Daily AI Facts\n"
-        "🧠 Smart, Short & Addictive\n\n"
-        "#shorts #aifacts #facts #ytshorts #knowledge"
+    creds = Credentials.from_authorized_user_file(
+        "token.json", SCOPES
     )
 
-    tags = [
-        "AI facts",
-        "facts",
-        "shorts",
-        "did you know",
-        "knowledge",
-        "viral shorts",
-        "mind blowing facts"
-    ]
-
-    return title, description, tags
+    return build("youtube", "v3", credentials=creds)
 
 
 def upload_video():
     youtube = get_authenticated_service()
 
-    fact = read_fact()
-    title, description, tags = build_metadata(fact)
-
     request = youtube.videos().insert(
         part="snippet,status",
         body={
             "snippet": {
-                "title": title,
-                "description": description,
-                "tags": tags,
+                "title": "🤯 Mind-Blowing AI Fact #Shorts",
+                "description": (
+                    "Did you know this?\n\n"
+                    "🔥 Daily AI Facts\n"
+                    "⚡ Fast. Smart. Viral.\n\n"
+                    "#shorts #facts #aifacts #knowledge #ytshorts"
+                ),
                 "categoryId": "27"
             },
             "status": {
@@ -87,7 +48,7 @@ def upload_video():
     )
 
     response = request.execute()
-    print("UPLOADED VIDEO ID:", response["id"])
+    print("UPLOADED:", response["id"])
 
 
 if __name__ == "__main__":
