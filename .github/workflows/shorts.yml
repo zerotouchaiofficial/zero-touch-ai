@@ -39,6 +39,8 @@ jobs:
       - name: Run Zero Touch AI Pipeline
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
+
         run: |
           python generate.py
           python voice.py
