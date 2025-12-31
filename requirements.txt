@@ -3,5 +3,5 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 requests
-moviepy
+moviepy==1.0.3
 gTTS
