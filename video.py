@@ -1,10 +1,10 @@
 from moviepy.editor import *
 
-audio = AudioFileClip("voice.wav")
+audio = AudioFileClip("voice.mp3")
 
 bg = ColorClip(
-    size=(1080,1920),
-    color=(0,0,0),
+    size=(1080, 1920),
+    color=(0, 0, 0),
     duration=audio.duration
 )
 
@@ -13,7 +13,7 @@ txt = TextClip(
     fontsize=70,
     color="white",
     method="caption",
-    size=(1000,None)
+    size=(1000, None)
 ).set_position("center").set_duration(audio.duration)
 
 final = CompositeVideoClip([bg, txt]).set_audio(audio)
