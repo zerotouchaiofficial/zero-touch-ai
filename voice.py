@@ -1,7 +1,6 @@
-from TTS.api import TTS
+from gtts import gTTS
 
-tts = TTS(model_name="tts_models/en/vctk/vits")
-tts.tts_to_file(
-    text=open("fact.txt").read(),
-    file_path="voice.wav"
-)
+text = open("fact.txt").read()
+
+tts = gTTS(text=text, lang="en")
+tts.save("voice.mp3")
