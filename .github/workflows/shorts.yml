@@ -42,4 +42,5 @@ jobs:
         run: |
           python generate.py
           python voice.py
-          python video.p
+          python video.py
+          python upload.py
