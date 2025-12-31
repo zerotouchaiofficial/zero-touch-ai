@@ -1,35 +1,72 @@
-import os, json
+import os
+import pickle
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
-# recreate credentials.json from secret
-with open("credentials.json", "w") as f:
-    f.write(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+VIDEO_FILE = "videos/short.mp4"
 
-flow = InstalledAppFlow.from_client_secrets_file(
-    "credentials.json", SCOPES
-)
-credentials = flow.run_console()
 
-youtube = build("youtube", "v3", credentials=credentials)
+def get_authenticated_service():
+    creds = None
 
-request = youtube.videos().insert(
-    part="snippet,status",
-    body={
-        "snippet": {
-            "title": "This Fact Will Blow Your Mind 🤯 #shorts",
-            "description": open("fact.txt").read()
-            + "\n\n#zerotouchai #facts #shorts #science #ai",
-            "categoryId": "27"
+    if os.path.exists("token.json"):
+        with open("token.json", "rb") as token:
+            creds = pickle.load(token)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                "credentials.json", SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+
+        with open("token.json", "wb") as token:
+            pickle.dump(creds, token)
+
+    return build("youtube", "v3", credentials=creds)
+
+
+def upload_video():
+    youtube = get_authenticated_service()
+
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": "🤯 Mind-Blowing AI Fact #Shorts",
+                "description": (
+                    "Did you know this amazing fact?\n\n"
+                    "⚡ Daily AI Facts\n"
+                    "🧠 Smart, short & addictive\n\n"
+                    "#shorts #aifacts #facts #knowledge #ytshorts"
+                ),
+                "tags": [
+                    "AI facts",
+                    "facts",
+                    "shorts",
+                    "did you know",
+                    "knowledge",
+                    "viral shorts"
+                ],
+                "categoryId": "27"
+            },
+            "status": {
+                "privacyStatus": "public",
+                "selfDeclaredMadeForKids": False
+            }
         },
-        "status": {
-            "privacyStatus": "public"
-        }
-    },
-    media_body=MediaFileUpload("short.mp4")
-)
+        media_body=MediaFileUpload(VIDEO_FILE, resumable=True)
+    )
 
-request.execute()
+    response = request.execute()
+    print("UPLOADED VIDEO ID:", response["id"])
+
+
+if __name__ == "__main__":
+    upload_video()
