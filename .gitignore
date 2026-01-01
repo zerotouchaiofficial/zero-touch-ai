@@ -1,6 +1,8 @@
 audio/
 videos/
-*.mp3
-*.mp4
+token.json
 token.b64
-.env
+credentials.json
+auth.py
+.DS_Store
+

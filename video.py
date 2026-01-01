@@ -1,64 +1,50 @@
 import os
-from moviepy.editor import (
-    AudioFileClip,
-    ColorClip,
-    ImageClip,
-    CompositeVideoClip
-)
-
-# ---------------- CONFIG ----------------
-AUDIO_DIR = "audio"
-VIDEO_DIR = "videos"
-OUTPUT = os.path.join(VIDEO_DIR, "short.mp4")
+import random
+from moviepy import ImageClip, AudioFileClip, CompositeVideoClip
 
 WIDTH = 1080
 HEIGHT = 1920
-DURATION = 10
-FPS = 30
-# ---------------------------------------
+DURATION_MIN = 7  # seconds (safe for YouTube Shorts)
 
-os.makedirs(VIDEO_DIR, exist_ok=True)
+AUDIO_DIR = "audio"
+BG_DIR = "backgrounds"
+OUTPUT_DIR = "videos"
 
-# -------- AUDIO --------
-audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith(".mp3")]
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+audio_files = sorted(os.listdir(AUDIO_DIR))
+bg_files = sorted(os.listdir(BG_DIR))
+
 if not audio_files:
-    raise Exception("voice.py failed — no audio generated")
+    raise Exception("No audio files found in audio/")
 
-audio = AudioFileClip(os.path.join(AUDIO_DIR, audio_files[0]))
+if not bg_files:
+    raise Exception("No background images found in backgrounds/")
 
-if audio.duration < DURATION:
-    audio = audio.set_duration(DURATION)
+audio_path = os.path.join(AUDIO_DIR, audio_files[0])
+bg_path = os.path.join(BG_DIR, random.choice(bg_files))
 
-# -------- BACKGROUND --------
-background = ColorClip(
-    size=(WIDTH, HEIGHT),
-    color=(10, 10, 10),
-    duration=DURATION
+audio = AudioFileClip(audio_path)
+duration = max(audio.duration, DURATION_MIN)
+
+bg = (
+    ImageClip(bg_path)
+    .set_duration(duration)
+    .resize((WIDTH, HEIGHT))
 )
 
-clips = [background]
+video = CompositeVideoClip([bg]).set_audio(audio)
 
-# -------- IMAGE OVERLAY (NO RESIZE) --------
-if os.path.exists("background.png"):
-    img = (
-        ImageClip("background.png")
-        .set_duration(DURATION)
-        .set_position("center")
-    )
-    clips.append(img)
+output_path = os.path.join(OUTPUT_DIR, "short.mp4")
 
-# -------- COMPOSE --------
-final = CompositeVideoClip(clips, size=(WIDTH, HEIGHT))
-final = final.set_audio(audio)
-
-final.write_videofile(
-    OUTPUT,
-    fps=FPS,
+video.write_videofile(
+    output_path,
+    fps=30,
     codec="libx264",
     audio_codec="aac",
-    bitrate="5000k",
-    preset="medium",
-    threads=4
+    bitrate="6000k",
+    threads=2,
+    preset="medium"
 )
 
-print("✅ FINAL VIDEO CREATED:", OUTPUT)
+print(f"Video created: {output_path}")
