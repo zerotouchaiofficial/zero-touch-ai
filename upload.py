@@ -1,48 +1,43 @@
-import os, time, random
+import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
-def get_service():
-    flow = InstalledAppFlow.from_client_secrets_file(
-        "credentials.json", SCOPES
-    )
-    creds = flow.run_console()
+def get_authenticated_service():
+    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     return build("youtube", "v3", credentials=creds)
 
-youtube = get_service()
+def upload_video():
+    if not os.path.exists("videos/short.mp4"):
+        raise Exception("Video not found")
 
-title_variants = [
-    "Did you know this?",
-    "Most people don’t know this",
-    "Random fact",
-    "Mind blowing fact",
-    "Crazy but true"
-]
+    youtube = get_authenticated_service()
 
-with open("current_fact.txt") as f:
-    fact = f.read()
-
-request = youtube.videos().insert(
-    part="snippet,status",
-    body={
-        "snippet": {
-            "title": random.choice(title_variants),
-            "description": fact,
-            "tags": ["shorts", "facts"],
-            "categoryId": "22"
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": "Did you know this? 🤯 #shorts",
+                "description": "Mind-blowing fact #shorts",
+                "tags": ["shorts", "facts", "didyouknow"],
+                "categoryId": "22"
+            },
+            "status": {
+                "privacyStatus": "public",
+                "selfDeclaredMadeForKids": False
+            }
         },
-        "status": {
-            "privacyStatus": "public"
-        }
-    },
-    media_body=MediaFileUpload(
-        "videos/short.mp4",
-        resumable=True
+        media_body=MediaFileUpload(
+            "videos/short.mp4",
+            chunksize=-1,
+            resumable=True
+        )
     )
-)
 
-request.execute()
-print("Uploaded")
+    response = request.execute()
+    print("Uploaded:", response["id"])
+
+if __name__ == "__main__":
+    upload_video()
