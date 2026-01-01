@@ -47,18 +47,14 @@ bg_images = [
 if bg_images:
     bg_path = random.choice(bg_images)
 
-    bg = ImageClip(bg_path).set_duration(duration)
-
-    # 🔥 SAFE scaling (NO PIL, NO ANTIALIAS)
-    scale = max(WIDTH / bg.w, HEIGHT / bg.h)
-    bg = bg.resized(scale)
-
-    # Center crop
-    bg = bg.crop(
-        x_center=bg.w / 2,
-        y_center=bg.h / 2,
-        width=WIDTH,
-        height=HEIGHT
+    bg = (
+        ImageClip(bg_path)
+        .set_duration(duration)
+        .on_color(
+            size=(WIDTH, HEIGHT),
+            color=(18, 18, 18),
+            pos=("center", "center")
+        )
     )
 else:
     bg = ColorClip(
@@ -67,7 +63,10 @@ else:
     ).set_duration(duration)
 
 # ---------------- FINAL VIDEO ----------------
-final = CompositeVideoClip([bg]).set_audio(audio)
+final = CompositeVideoClip(
+    [bg],
+    size=(WIDTH, HEIGHT)
+).set_audio(audio)
 
 final.write_videofile(
     OUT_FILE,
