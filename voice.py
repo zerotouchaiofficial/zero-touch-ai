@@ -1,17 +1,24 @@
 import os
-import sys
+from gtts import gTTS
 
-def generate_voice(text):
-    os.makedirs("audio", exist_ok=True)
-    output_file = "audio/voice.mp3"
+TEXT_FILE = "facts/facts.txt"
+AUDIO_DIR = "audio"
 
-    # Free system TTS (works on cloud)
-    os.system(f'espeak "{text}" --stdout > {output_file}')
-    return output_file
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
+# Read text
+if not os.path.exists(TEXT_FILE):
+    raise Exception("facts/facts.txt not found")
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("No text provided")
-    else:
-        generate_voice(sys.argv[1])
+with open(TEXT_FILE, "r", encoding="utf-8") as f:
+    lines = [line.strip() for line in f if line.strip()]
+
+if not lines:
+    raise Exception("facts.txt is empty — nothing to convert to voice")
+
+# Create audio files
+for i, text in enumerate(lines, start=1):
+    tts = gTTS(text=text, lang="en")
+    output_path = os.path.join(AUDIO_DIR, f"audio_{i}.mp3")
+    tts.save(output_path)
+    print("Created:", output_path)
