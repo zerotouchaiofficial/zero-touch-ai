@@ -20,6 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install moviepy==1.0.3
           pip install moviepy gtts google-api-python-client google-auth google-auth-oauthlib imageio-ffmpeg
 
       - name: Decode YouTube token
