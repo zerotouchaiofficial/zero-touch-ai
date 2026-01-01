@@ -1,7 +1,7 @@
 import os
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
@@ -13,14 +13,14 @@ def get_authenticated_service():
     return build("youtube", "v3", credentials=creds)
 
 def upload_video():
-    video_file = "videos/short.mp4"
+    video_path = "videos/short.mp4"
 
-    if not os.path.exists(video_file):
-        raise Exception("Video file not found")
+    if not os.path.exists(video_path):
+        raise Exception("Video not found")
 
-    size_kb = os.path.getsize(video_file) / 1024
-    if size_kb < 300:
-        raise Exception("Video too small (<300KB)")
+    size_mb = os.path.getsize(video_path) / (1024 * 1024)
+    if size_mb < 1:
+        raise Exception("Video too small (<1MB) — YouTube will abandon")
 
     youtube = get_authenticated_service()
 
@@ -28,21 +28,20 @@ def upload_video():
         part="snippet,status",
         body={
             "snippet": {
-                "title": "Mind Blowing AI Fact 🤯 #shorts",
-                "description": "AI generated facts\n#shorts #facts #ai",
-                "tags": ["ai", "facts", "shorts"],
-                "categoryId": "27"
+                "title": "Mind-Blowing Fact 🤯",
+                "description": "#shorts",
+                "tags": ["shorts"],
+                "categoryId": "22"
             },
             "status": {
-                "privacyStatus": "public",
-                "selfDeclaredMadeForKids": False
+                "privacyStatus": "public"
             }
         },
-        media_body=MediaFileUpload(video_file, resumable=True)
+        media_body=MediaFileUpload(video_path, resumable=True)
     )
 
     response = request.execute()
-    print("Uploaded Video ID:", response["id"])
+    print("UPLOADED:", response["id"])
 
 if __name__ == "__main__":
     upload_video()
