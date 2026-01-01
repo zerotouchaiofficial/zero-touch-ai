@@ -1,0 +1,8 @@
+credentials.json
+token.json
+auth.py
+audio/
+videos/
+__pycache__/
+*.pyc
+.env
