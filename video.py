@@ -8,68 +8,76 @@ from moviepy.editor import (
     ColorClip
 )
 
+# ---------------- CONFIG ----------------
 WIDTH = 1080
 HEIGHT = 1920
 FPS = 30
-OUTPUT = "videos/short.mp4"
+
 AUDIO_DIR = "audio"
 BG_DIR = "backgrounds"
+OUT_DIR = "videos"
+OUT_FILE = f"{OUT_DIR}/short.mp4"
 
-# Ensure output dirs exist
-Path("videos").mkdir(exist_ok=True)
+# ---------------- PREP ----------------
 Path(AUDIO_DIR).mkdir(exist_ok=True)
+Path(BG_DIR).mkdir(exist_ok=True)
+Path(OUT_DIR).mkdir(exist_ok=True)
 
-# ---- Load audio ----
+# ---------------- AUDIO ----------------
 audio_files = [
     f for f in os.listdir(AUDIO_DIR)
     if f.endswith(".mp3")
 ]
 
 if not audio_files:
-    raise Exception("No audio found in audio/")
+    raise Exception("❌ No audio files found in audio/")
 
 audio_path = os.path.join(AUDIO_DIR, audio_files[-1])
 audio = AudioFileClip(audio_path)
-duration = max(audio.duration, 5)  # force minimum length
 
-# ---- Background selection ----
-bg_images = []
-if os.path.exists(BG_DIR):
-    bg_images = [
-        os.path.join(BG_DIR, f)
-        for f in os.listdir(BG_DIR)
-        if f.lower().endswith((".png", ".jpg", ".jpeg"))
-    ]
+duration = max(5, int(audio.duration) + 1)
+
+# ---------------- BACKGROUND ----------------
+bg_images = [
+    os.path.join(BG_DIR, f)
+    for f in os.listdir(BG_DIR)
+    if f.lower().endswith((".png", ".jpg", ".jpeg"))
+]
 
 if bg_images:
     bg_path = random.choice(bg_images)
-    background = (
-        ImageClip(bg_path)
-        .set_duration(duration)
-        .resize(height=HEIGHT)
-        .crop(x_center=WIDTH // 2, y_center=HEIGHT // 2, width=WIDTH, height=HEIGHT)
+
+    bg = ImageClip(bg_path).set_duration(duration)
+
+    # 🔥 SAFE scaling (NO PIL, NO ANTIALIAS)
+    scale = max(WIDTH / bg.w, HEIGHT / bg.h)
+    bg = bg.resized(scale)
+
+    # Center crop
+    bg = bg.crop(
+        x_center=bg.w / 2,
+        y_center=bg.h / 2,
+        width=WIDTH,
+        height=HEIGHT
     )
 else:
-    # Fallback solid background
-    background = (
-        ColorClip(size=(WIDTH, HEIGHT), color=(15, 15, 15))
-        .set_duration(duration)
-    )
+    bg = ColorClip(
+        size=(WIDTH, HEIGHT),
+        color=(18, 18, 18)
+    ).set_duration(duration)
 
-# ---- Combine ----
-final = (
-    CompositeVideoClip([background])
-    .set_audio(audio)
-)
+# ---------------- FINAL VIDEO ----------------
+final = CompositeVideoClip([bg]).set_audio(audio)
 
 final.write_videofile(
-    OUTPUT,
+    OUT_FILE,
     fps=FPS,
     codec="libx264",
     audio_codec="aac",
-    bitrate="8000k",
+    bitrate="9000k",
     threads=4,
-    preset="medium"
+    preset="medium",
+    logger=None
 )
 
-print(f"Video created: {OUTPUT}")
+print(f"✅ Video created: {OUT_FILE}")
