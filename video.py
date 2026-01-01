@@ -1,37 +1,43 @@
 import os
-from moviepy.editor import ImageClip, AudioFileClip
+from moviepy.editor import ColorClip, AudioFileClip, concatenate_audioclips
 
-FACTS_DIR = "facts"
 AUDIO_DIR = "audio"
-VIDEOS_DIR = "videos"
+VIDEO_DIR = "videos"
+OUTPUT_VIDEO = os.path.join(VIDEO_DIR, "short.mp4")
 
-os.makedirs(VIDEOS_DIR, exist_ok=True)
+# Always create folders (GitHub Actions safe)
+os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(VIDEO_DIR, exist_ok=True)
 
-fact_files = sorted(os.listdir(FACTS_DIR))
-audio_files = sorted(os.listdir(AUDIO_DIR))
+audio_files = sorted([
+    f for f in os.listdir(AUDIO_DIR)
+    if f.endswith(".mp3")
+])
 
-fact = open(os.path.join(FACTS_DIR, fact_files[-1])).read().strip()
-audio_path = os.path.join(AUDIO_DIR, audio_files[-1])
+if not audio_files:
+    raise Exception("No audio files found in audio/ — voice.py failed")
 
-audio = AudioFileClip(audio_path)
+audio_clips = []
+for file in audio_files:
+    audio_clips.append(AudioFileClip(os.path.join(AUDIO_DIR, file)))
 
-# Create solid background
-clip = ImageClip("background.png").set_duration(audio.duration)
-clip = clip.set_audio(audio)
+final_audio = concatenate_audioclips(audio_clips)
 
-output_path = os.path.join(VIDEOS_DIR, "short.mp4")
+duration = final_audio.duration
+
+# Create vertical Shorts video (1080x1920)
+clip = ColorClip(
+    size=(1080, 1920),
+    color=(0, 0, 0),
+    duration=duration
+).set_audio(final_audio)
 
 clip.write_videofile(
-    output_path,
+    OUTPUT_VIDEO,
+    fps=30,
     codec="libx264",
     audio_codec="aac",
-    fps=30,
-    preset="medium",
-    threads=4,
-    ffmpeg_params=[
-        "-pix_fmt", "yuv420p",
-        "-movflags", "+faststart"
-    ]
+    preset="medium"
 )
 
-print("VIDEO CREATED:", output_path)
+print("Video created:", OUTPUT_VIDEO)
