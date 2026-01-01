@@ -3,27 +3,33 @@ name: Zero Touch AI Shorts
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"
+    - cron: "0 */2 * * *"   # runs every 2 hours (12 shorts/day)
 
 jobs:
-  run:
+  shorts:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run Zero Touch AI
+      - name: Restore YouTube token
+        run: |
+          echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 --decode > token.json
+
+      - name: Run AI pipeline
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          YOUTUBE_TOKEN_B64: ${{ secrets.YOUTUBE_TOKEN_B64 }}
         run: |
           python generate.py
           python voice.py
