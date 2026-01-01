@@ -1,28 +1,36 @@
-import random
+import os
 from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
 
 WIDTH, HEIGHT = 1080, 1920
 
-with open("current_fact.txt") as f:
-    text = f.read()
-
-bg = random.choice([
-    "backgrounds/bg1.jpg",
-    "backgrounds/bg2.jpg",
-    "backgrounds/bg3.jpg",
-    "backgrounds/bg4.jpg",
-])
+with open("current_fact.txt", "r") as f:
+    text = f.read().strip()
 
 audio = AudioFileClip("audio/voice.mp3")
-duration = audio.duration + 1
+duration = max(audio.duration + 1, 6)
 
-background = (
-    ImageClip(bg)
+bg_folder = "backgrounds"
+bg_files = [f for f in os.listdir(bg_folder) if f.endswith((".jpg", ".png"))]
+bg_path = os.path.join(bg_folder, bg_files[0])
+
+bg = (
+    ImageClip(bg_path)
     .set_duration(duration)
-    .resize((WIDTH, HEIGHT))
+    .resize(height=HEIGHT)
+    .crop(x_center=WIDTH // 2, width=WIDTH, height=HEIGHT)
 )
 
-final = background.set_audio(audio)
+from moviepy.video.VideoClip import ColorClip
+
+overlay = ColorClip(
+    size=(WIDTH, HEIGHT),
+    color=(0, 0, 0)
+).set_opacity(0.35).set_duration(duration)
+
+final = CompositeVideoClip([bg, overlay])
+final = final.set_audio(audio)
+
+os.makedirs("videos", exist_ok=True)
 
 final.write_videofile(
     "videos/short.mp4",
@@ -31,3 +39,5 @@ final.write_videofile(
     audio_codec="aac",
     bitrate="8000k"
 )
+
+print("Video created")
