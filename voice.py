@@ -1,27 +1,38 @@
 import os
-from gtts import gTTS
+from moviepy.editor import ColorClip, AudioFileClip
 
 AUDIO_DIR = "audio"
+VIDEO_DIR = "videos"
+
+# Auto-create folders
 os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(VIDEO_DIR, exist_ok=True)
 
-TEXT_FILE = "facts/facts.txt"
-AUDIO_DIR = "audio"
+audio_files = sorted(os.listdir(AUDIO_DIR))
 
-os.makedirs(AUDIO_DIR, exist_ok=True)
+if not audio_files:
+    raise Exception("No audio files found in audio/ — voice.py failed")
 
-# Read text
-if not os.path.exists(TEXT_FILE):
-    raise Exception("facts/facts.txt not found")
+audio_path = os.path.join(AUDIO_DIR, audio_files[-1])
+audio = AudioFileClip(audio_path)
 
-with open(TEXT_FILE, "r", encoding="utf-8") as f:
-    lines = [line.strip() for line in f if line.strip()]
+# Ensure minimum Shorts-safe duration (>= 7s)
+duration = max(7, int(audio.duration))
 
-if not lines:
-    raise Exception("facts.txt is empty — nothing to convert to voice")
+video = (
+    ColorClip(size=(720, 1280), color=(0, 0, 0))
+    .set_duration(duration)
+    .set_audio(audio)
+)
 
-# Create audio files
-for i, text in enumerate(lines, start=1):
-    tts = gTTS(text=text, lang="en")
-    output_path = os.path.join(AUDIO_DIR, f"audio_{i}.mp3")
-    tts.save(output_path)
-    print("Created:", output_path)
+output_path = os.path.join(VIDEO_DIR, "short.mp4")
+
+video.write_videofile(
+    output_path,
+    fps=30,
+    codec="libx264",
+    audio_codec="aac",
+    bitrate="3000k",
+)
+
+print(f"Video created: {output_path}")
