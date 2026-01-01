@@ -35,4 +35,13 @@ jobs:
           python generate.py
           python voice.py
           python video.py
+          - name: Debug secret presence
+  run: |
+    if [ -z "${{ secrets.YOUTUBE_TOKEN_B64 }}" ]; then
+      echo "SECRET IS EMPTY"
+      exit 1
+    else
+      echo "SECRET EXISTS"
+    fi
+
           python upload.py
