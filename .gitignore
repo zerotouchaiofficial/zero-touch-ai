@@ -1,18 +1,8 @@
-# Generated folders
 audio/
 videos/
-
-# Auth / secrets
 token.json
-token.b64
 credentials.json
-auth.py
-
-# Temp files
-bg.jpg
+*.mp4
+*.mp3
 .DS_Store
-
-# Python cache
-__pycache__/
-*.pyc
 

@@ -1,16 +1,29 @@
 import random
 
-FACTS = [
-    "Honey never spoils.",
-    "Wombat poop is cube-shaped.",
-    "Octopuses have three hearts.",
-    "Your brain uses 20 percent of your body's energy.",
-    "Bananas are berries."
-]
+FACTS_FILE = "facts.txt"
+USED_FILE = "used_facts.txt"
 
-fact = random.choice(FACTS)
+with open(FACTS_FILE, "r") as f:
+    facts = [x.strip() for x in f if x.strip()]
 
-with open("facts.txt", "w") as f:
+used = set()
+try:
+    with open(USED_FILE, "r") as f:
+        used = set(x.strip() for x in f)
+except:
+    pass
+
+available = list(set(facts) - used)
+
+if not available:
+    raise Exception("No unused facts left")
+
+fact = random.choice(available)
+
+with open("current_fact.txt", "w") as f:
     f.write(fact)
+
+with open(USED_FILE, "a") as f:
+    f.write(fact + "\n")
 
 print(fact)

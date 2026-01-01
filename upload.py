@@ -1,34 +1,48 @@
-import os
+import os, time, random
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
-def upload_video():
-    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    youtube = build("youtube", "v3", credentials=creds)
-
-    video_file = "videos/short.mp4"
-
-    request = youtube.videos().insert(
-        part="snippet,status",
-        body={
-            "snippet": {
-                "title": "Did You Know? 🤯",
-                "description": "#shorts #facts",
-                "tags": ["shorts", "facts"],
-                "categoryId": "27"
-            },
-            "status": {
-                "privacyStatus": "public"
-            }
-        },
-        media_body=MediaFileUpload(video_file, resumable=True)
+def get_service():
+    flow = InstalledAppFlow.from_client_secrets_file(
+        "credentials.json", SCOPES
     )
+    creds = flow.run_console()
+    return build("youtube", "v3", credentials=creds)
 
-    response = request.execute()
-    print("Uploaded video ID:", response["id"])
+youtube = get_service()
 
-if __name__ == "__main__":
-    upload_video()
+title_variants = [
+    "Did you know this?",
+    "Most people don’t know this",
+    "Random fact",
+    "Mind blowing fact",
+    "Crazy but true"
+]
+
+with open("current_fact.txt") as f:
+    fact = f.read()
+
+request = youtube.videos().insert(
+    part="snippet,status",
+    body={
+        "snippet": {
+            "title": random.choice(title_variants),
+            "description": fact,
+            "tags": ["shorts", "facts"],
+            "categoryId": "22"
+        },
+        "status": {
+            "privacyStatus": "public"
+        }
+    },
+    media_body=MediaFileUpload(
+        "videos/short.mp4",
+        resumable=True
+    )
+)
+
+request.execute()
+print("Uploaded")
