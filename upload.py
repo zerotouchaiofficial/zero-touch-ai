@@ -1,29 +1,11 @@
-import os
-import base64
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-VIDEO_FILE = "videos/short.mp4"
-
 
 def get_authenticated_service():
-    b64_token = os.environ.get("YOUTUBE_TOKEN_B64")
-    if not b64_token:
-        raise Exception("YOUTUBE_TOKEN_B64 secret missing")
-
-    token_json = base64.b64decode(b64_token).decode("utf-8")
-
-    with open("token.json", "w") as f:
-        f.write(token_json)
-
-    creds = Credentials.from_authorized_user_file(
-        "token.json", SCOPES
-    )
-
+    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     return build("youtube", "v3", credentials=creds)
-
 
 def upload_video():
     youtube = get_authenticated_service()
