@@ -1,52 +1,68 @@
 import os
 from moviepy.editor import (
-    ColorClip,
     AudioFileClip,
-    CompositeVideoClip,
-    TextClip
+    ColorClip,
+    ImageClip,
+    CompositeVideoClip
 )
 
+# -------- CONFIG --------
 AUDIO_DIR = "audio"
 VIDEO_DIR = "videos"
+OUTPUT_VIDEO = os.path.join(VIDEO_DIR, "short.mp4")
+
+WIDTH = 1080
+HEIGHT = 1920
+DURATION = 10  # seconds (YouTube Shorts safe)
+FPS = 30
+# ------------------------
 
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
-audio_files = sorted(os.listdir(AUDIO_DIR))
+# -------- LOAD AUDIO --------
+audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith(".mp3")]
 if not audio_files:
     raise Exception("No audio files found in audio/ — voice.py failed")
 
 audio_path = os.path.join(AUDIO_DIR, audio_files[0])
 audio = AudioFileClip(audio_path)
 
-# FORCE MIN 7 SECONDS
-duration = max(audio.duration, 7)
+# Force minimum duration
+if audio.duration < DURATION:
+    audio = audio.set_duration(DURATION)
 
-# 1080x1920 vertical
+# -------- BACKGROUND --------
 background = ColorClip(
-    size=(1080, 1920),
-    color=(0, 0, 0),
-    duration=duration
+    size=(WIDTH, HEIGHT),
+    color=(15, 15, 15),
+    duration=DURATION
 )
 
-text = TextClip(
-    "Did you know?",
-    fontsize=90,
-    color="white",
-    font="DejaVu-Sans-Bold"
-).set_position("center").set_duration(duration)
+# -------- OPTIONAL IMAGE OVERLAY --------
+image_path = "background.png"
+clips = [background]
 
-video = CompositeVideoClip([background, text]).set_audio(audio)
+if os.path.exists(image_path):
+    image = (
+        ImageClip(image_path)
+        .resize(height=HEIGHT)
+        .set_duration(DURATION)
+        .set_position("center")
+    )
+    clips.append(image)
 
-output_path = os.path.join(VIDEO_DIR, "short.mp4")
+# -------- FINAL VIDEO --------
+final = CompositeVideoClip(clips)
+final = final.set_audio(audio)
 
-video.write_videofile(
-    output_path,
-    fps=30,
+final.write_videofile(
+    OUTPUT_VIDEO,
+    fps=FPS,
     codec="libx264",
     audio_codec="aac",
-    bitrate="8000k",        # 🔥 VERY IMPORTANT
+    bitrate="4000k",
     threads=4,
     preset="medium"
 )
 
-print(f"Video created: {output_path}")
+print(f"✅ Video created: {OUTPUT_VIDEO}")
