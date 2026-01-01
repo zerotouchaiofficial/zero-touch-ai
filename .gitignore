@@ -15,3 +15,10 @@ auth.py
 .DS_Store
 __pycache__/
 
+videos/
+output/
+audio/
+*.mp4
+*.mp3
+.DS_Store
+
