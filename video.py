@@ -1,45 +1,37 @@
 import os
-from moviepy.editor import ColorClip, AudioFileClip
+from moviepy.editor import ImageClip, AudioFileClip
 
-# ---------- CONFIG ----------
-VIDEO_DIR = "videos"
-OUTPUT_VIDEO = os.path.join(VIDEO_DIR, "output.mp4")
-AUDIO_FILE = "voice.mp3"
-DURATION = 8  # seconds (Shorts safe)
-RESOLUTION = (1080, 1920)  # Vertical Shorts
-# ----------------------------
+FACTS_DIR = "facts"
+AUDIO_DIR = "audio"
+VIDEOS_DIR = "videos"
 
-def ensure_dirs():
-    if not os.path.exists(VIDEO_DIR):
-        os.makedirs(VIDEO_DIR)
+os.makedirs(VIDEOS_DIR, exist_ok=True)
 
-def create_video():
-    if not os.path.exists(AUDIO_FILE):
-        print("voice.mp3 not found")
-        return
+fact_files = sorted(os.listdir(FACTS_DIR))
+audio_files = sorted(os.listdir(AUDIO_DIR))
 
-    ensure_dirs()
+fact = open(os.path.join(FACTS_DIR, fact_files[-1])).read().strip()
+audio_path = os.path.join(AUDIO_DIR, audio_files[-1])
 
-    audio = AudioFileClip(AUDIO_FILE)
-    duration = min(audio.duration, DURATION)
+audio = AudioFileClip(audio_path)
 
-    video = (
-        ColorClip(size=RESOLUTION, color=(0, 0, 0))
-        .set_duration(duration)
-        .set_audio(audio)
-    )
+# Create solid background
+clip = ImageClip("background.png").set_duration(audio.duration)
+clip = clip.set_audio(audio)
 
-    video.write_videofile(
-        OUTPUT_VIDEO,
-        fps=30,
-        codec="libx264",
-        audio_codec="aac",
-        threads=4,
-        verbose=False,
-        logger=None
-    )
+output_path = os.path.join(VIDEOS_DIR, "short.mp4")
 
-    print("Video created:", OUTPUT_VIDEO)
+clip.write_videofile(
+    output_path,
+    codec="libx264",
+    audio_codec="aac",
+    fps=30,
+    preset="medium",
+    threads=4,
+    ffmpeg_params=[
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart"
+    ]
+)
 
-if __name__ == "__main__":
-    create_video()
+print("VIDEO CREATED:", output_path)
