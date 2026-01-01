@@ -18,10 +18,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install moviepy==1.0.3
-          pip install moviepy gtts google-api-python-client google-auth google-auth-oauthlib imageio-ffmpeg
+- name: Install dependencies
+  run: |
+    pip uninstall -y pillow
+    pip install pillow==9.5.0
+    pip install moviepy==1.0.3
+    pip install gtts imageio-ffmpeg google-api-python-client google-auth google-auth-oauthlib
+
 
       - name: Decode YouTube token
         run: |
