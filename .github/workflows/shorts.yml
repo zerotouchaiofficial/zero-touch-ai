@@ -25,7 +25,8 @@ jobs:
 
       - name: Restore YouTube token
         run: |
-          echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > token.json
+          printf "%s" "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > token.json
+          ls -lh token.json
 
       - name: Run Zero Touch AI Pipeline
         env:
