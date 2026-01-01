@@ -1,13 +1,21 @@
 import os
-import json
 import base64
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
+VIDEO_PATH = "videos/output.mp4"   # change ONLY if your video name is different
+TITLE = "AI Fact 🤯"
+DESCRIPTION = "Subscribe for more AI facts"
+TAGS = ["ai", "facts", "shorts"]
+CATEGORY_ID = "22"  # People & Blogs
+PRIVACY_STATUS = "public"
+
+
 def get_authenticated_service():
+    # 🔥 THIS IS THE KEY PART
     token_b64 = os.getenv("YOUTUBE_TOKEN_B64")
     if not token_b64:
         raise Exception("YOUTUBE_TOKEN_B64 secret missing")
@@ -20,30 +28,30 @@ def get_authenticated_service():
     creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     return build("youtube", "v3", credentials=creds)
 
+
 def upload_video():
     youtube = get_authenticated_service()
-
-    video_path = "videos/final.mp4"
 
     request = youtube.videos().insert(
         part="snippet,status",
         body={
             "snippet": {
-                "title": "Mind-Blowing Fact 🤯 #shorts",
-                "description": "🔥 AI Fact Short\n\n#facts #shorts #ai #knowledge",
-                "tags": ["facts", "shorts", "ai", "knowledge"],
-                "categoryId": "27"
+                "title": TITLE,
+                "description": DESCRIPTION,
+                "tags": TAGS,
+                "categoryId": CATEGORY_ID,
             },
             "status": {
-                "privacyStatus": "public",
-                "selfDeclaredMadeForKids": False
-            }
+                "privacyStatus": PRIVACY_STATUS,
+                "selfDeclaredMadeForKids": False,
+            },
         },
-        media_body=MediaFileUpload(video_path, resumable=False)
+        media_body=MediaFileUpload(VIDEO_PATH, resumable=True),
     )
 
     response = request.execute()
     print("✅ UPLOADED VIDEO ID:", response["id"])
+
 
 if __name__ == "__main__":
     upload_video()
