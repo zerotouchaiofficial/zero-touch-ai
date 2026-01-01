@@ -3,45 +3,33 @@ name: Zero Touch AI Shorts
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"   # every 2 hours (12 shorts/day)
+    - cron: "0 */2 * * *"
 
 jobs:
-  shorts:
+  run:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Restore YouTube token
+      - name: Decode YouTube token
         run: |
-          printf "%s" "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > token.json
+          echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 --decode > token.json
           ls -lh token.json
 
-      - name: Run Zero Touch AI Pipeline
+      - name: Run Zero Touch AI
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           python generate.py
           python voice.py
           python video.py
-          - name: Debug secret presence
-  run: |
-    if [ -z "${{ secrets.YOUTUBE_TOKEN_B64 }}" ]; then
-      echo "SECRET IS EMPTY"
-      exit 1
-    else
-      echo "SECRET EXISTS"
-    fi
-
           python upload.py
