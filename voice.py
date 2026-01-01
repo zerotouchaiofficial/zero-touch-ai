@@ -1,6 +1,9 @@
 import os
 from gtts import gTTS
 
+AUDIO_DIR = "audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
+
 TEXT_FILE = "facts/facts.txt"
 AUDIO_DIR = "audio"
 
