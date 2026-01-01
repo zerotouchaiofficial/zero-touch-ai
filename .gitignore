@@ -1,4 +1,17 @@
+# generated runtime files
+output/
 audio/
-videos/
+video/
+current_fact.txt
+facts_used.json
+
+# secrets
+token.b64
+token.json
+credentials.json
+auth.py
+
+# system
 .DS_Store
+__pycache__/
 
