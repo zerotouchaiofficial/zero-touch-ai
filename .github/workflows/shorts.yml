@@ -20,14 +20,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Decode YouTube token
-        run: |
-          echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 --decode > token.json
-          ls -lh token.json
-
       - name: Run Zero Touch AI
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          YOUTUBE_TOKEN_B64: ${{ secrets.YOUTUBE_TOKEN_B64 }}
         run: |
           python generate.py
           python voice.py
