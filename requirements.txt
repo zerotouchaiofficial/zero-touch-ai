@@ -1,5 +1,5 @@
-moviepy==1.0.3
-edge-tts
-Pillow
-numpy
-requests
+moviepy
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
