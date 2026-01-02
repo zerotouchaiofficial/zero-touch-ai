@@ -12,19 +12,38 @@ USED_FACTS_FILE = "data/used_facts.json"
 os.makedirs("data", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
 
-# ---------- FACTS (AUTO, NO STORAGE) ----------
+# ---------- SAFE FACT SOURCES ----------
+
+OFFLINE_FACTS = [
+    "Octopuses have three hearts and blue blood.",
+    "Bananas are berries, but strawberries are not.",
+    "A day on Venus is longer than a year on Venus.",
+    "Honey never spoils, even after thousands of years.",
+    "Sharks existed before trees.",
+    "Wombat poop is cube-shaped.",
+    "There are more stars in the universe than grains of sand on Earth.",
+    "The Eiffel Tower grows about 6 inches in summer."
+]
 
 def fetch_fact():
-    sources = [
-        "https://uselessfacts.jsph.pl/random.json?language=en",
-        "http://numbersapi.com/random/trivia?json"
+    urls = [
+        "https://uselessfacts.jsph.pl/random.json?language=en"
     ]
-    url = random.choice(sources)
-    r = requests.get(url, timeout=10)
 
-    if isinstance(r.json(), dict) and "text" in r.json():
-        return r.json()["text"].strip()
-    return ""
+    random.shuffle(urls)
+
+    for url in urls:
+        try:
+            r = requests.get(url, timeout=5)
+            data = r.json()
+            fact = data.get("text", "").strip()
+            if fact:
+                return fact
+        except Exception:
+            pass
+
+    # FINAL FALLBACK (NEVER FAILS)
+    return random.choice(OFFLINE_FACTS)
 
 def get_new_facts(count):
     with open(USED_FACTS_FILE) as f:
@@ -33,9 +52,9 @@ def get_new_facts(count):
     facts = []
     tries = 0
 
-    while len(facts) < count and tries < 30:
+    while len(facts) < count and tries < 50:
         fact = fetch_fact()
-        if fact and fact not in used and len(fact) < 140:
+        if fact not in used and len(fact) < 140:
             facts.append(fact)
             used.add(fact)
         tries += 1
@@ -45,7 +64,7 @@ def get_new_facts(count):
 
     return facts
 
-# ---------- BACKGROUND VIDEO (AUTO DOWNLOAD) ----------
+# ---------- BACKGROUND VIDEO (SAFE CDN) ----------
 
 def download_background():
     urls = [
@@ -53,9 +72,10 @@ def download_background():
         "https://cdn.pixabay.com/video/2022/10/10/134254-758746924_large.mp4",
         "https://cdn.pixabay.com/video/2023/03/29/157230-812991593_large.mp4"
     ]
+
     url = random.choice(urls)
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    tmp.write(requests.get(url, timeout=20).content)
+    tmp.write(requests.get(url, timeout=15).content)
     tmp.close()
     return tmp.name
 
