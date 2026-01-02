@@ -1,15 +1,11 @@
-import os, json, random, pickle, subprocess, textwrap
+import os, json, random, subprocess, textwrap, pickle
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import (
-    ImageSequenceClip,
-    AudioFileClip,
-    concatenate_audioclips
-)
+from moviepy.editor import ImageSequenceClip, AudioFileClip, concatenate_audioclips
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# ---------------- CONFIG ----------------
+# ================== CONFIG ==================
 WIDTH, HEIGHT = 720, 1280
 FPS = 30
 TOTAL_DURATION = 60
@@ -22,82 +18,83 @@ USED_FACTS_FILE = "used_facts.json"
 
 os.makedirs("videos", exist_ok=True)
 
-# ---------------- FACT DATABASE ----------------
+# ================== FACT POOL ==================
 FACTS = [
     "NASA confirmed that space smells like burning metal",
     "Scientists discovered a planet where it rains diamonds",
-    "Your brain edits reality without you noticing",
-    "AI can read thoughts using brain signals",
-    "Time slows near massive objects",
-    "There are colors humans cannot see",
-    "Your phone listens even when locked",
-    "The universe may end sooner than expected",
+    "Your brain edits reality before you see it",
+    "There are colors humans cannot perceive",
+    "Time moves slower near massive objects",
+    "Humans glow faintly due to bioluminescence",
     "Your shadow can move faster than light",
-    "Sleep deprivation is more dangerous than alcohol",
-    "Humans glow faintly in the dark",
-    "Your name can affect your success",
-    "Memory can be altered without you knowing",
-    "Reality is delayed inside your brain",
-    "The internet has a physical weight",
+    "The universe may not be infinite",
+    "Sleep deprivation is deadlier than alcohol",
+    "Your memory can be rewritten without you noticing",
 ]
 
-# ---------------- USED FACT TRACKING ----------------
 used = json.load(open(USED_FACTS_FILE)) if os.path.exists(USED_FACTS_FILE) else []
 available = [f for f in FACTS if f not in used]
 
 if len(available) < FACTS_PER_VIDEO:
-    raise Exception("❌ Not enough unused facts left")
+    raise Exception("❌ Not enough unused facts")
 
 selected_facts = random.sample(available, FACTS_PER_VIDEO)
 used.extend(selected_facts)
 json.dump(used, open(USED_FACTS_FILE, "w"))
 
-# ---------------- VOICE GENERATION ----------------
+# ================== VOICE (SYNCED) ==================
 audio_clips = []
 
 for i, fact in enumerate(selected_facts):
     audio_path = f"videos/voice_{i}.wav"
     subprocess.run(
-        ["espeak", "-s", "145", "-p", "40", "-w", audio_path, fact],
+        ["espeak", "-s", "140", "-p", "45", "-w", audio_path, fact],
         check=True
     )
-    audio_clips.append(AudioFileClip(audio_path))
+    clip = AudioFileClip(audio_path).set_duration(SECONDS_PER_FACT)
+    audio_clips.append(clip)
 
 final_audio = concatenate_audioclips(audio_clips)
 
-# ---------------- TEXT DRAW HELPER ----------------
-def draw_centered_text(draw, text, font, y):
-    lines = textwrap.wrap(text, width=18)
-    text_block = "\n".join(lines)
-    bbox = draw.multiline_textbbox((0, 0), text_block, font=font, align="center")
-    x = (WIDTH - (bbox[2] - bbox[0])) // 2
-    draw.multiline_text((x, y), text_block, fill="white", font=font, align="center")
-
-# ---------------- VIDEO FRAMES ----------------
-frames = []
-bg_colors = [(15,15,15), (30,60,90), (90,30,60), (20,80,60)]
-
+# ================== FONT ==================
 try:
-    font = ImageFont.truetype("DejaVuSans-Bold.ttf", 60)
+    font = ImageFont.truetype("DejaVuSans-Bold.ttf", 64)
 except:
     font = ImageFont.load_default()
 
-for idx, fact in enumerate(selected_facts):
-    bg = random.choice(bg_colors)
+# ================== TEXT DRAW ==================
+def draw_fact(draw, text, frame_idx):
+    wrapped = textwrap.wrap(text, width=18)
+    block = "\n".join(wrapped)
+
+    bbox = draw.multiline_textbbox((0, 0), block, font=font, align="center")
+    text_w = bbox[2] - bbox[0]
+
+    # TEXT ANIMATION (slide up + fade illusion)
+    base_y = HEIGHT // 2 - 100
+    anim_offset = int(np.sin(frame_idx / 8) * 20)
+    x = (WIDTH - text_w) // 2
+    y = base_y + anim_offset
+
+    draw.multiline_text((x, y), block, fill="white", font=font, align="center")
+
+# ================== VIDEO FRAMES ==================
+frames = []
+bg_colors = [
+    (15, 15, 15),
+    (30, 60, 90),
+    (90, 30, 60),
+    (20, 80, 60)
+]
+
+for fact_index, fact in enumerate(selected_facts):
+    bg = bg_colors[fact_index % len(bg_colors)]
 
     for f in range(SECONDS_PER_FACT * FPS):
         img = Image.new("RGB", (WIDTH, HEIGHT), bg)
         draw = ImageDraw.Draw(img)
 
-        # Animated vertical movement
-        y = int(HEIGHT * 0.3 + np.sin(f / 10) * 20)
-
-        draw_centered_text(
-            draw,
-            f"TRENDING FACT #{idx+1}\n\n{fact}",
-            font,
-            y
-        )
+        draw_fact(draw, f"FACT #{fact_index+1}\n\n{fact}", f)
 
         frames.append(np.array(img))
 
@@ -108,29 +105,29 @@ clip.write_videofile(
     VIDEO_PATH,
     codec="libx264",
     audio_codec="aac",
-    fps=FPS
+    fps=FPS,
+    threads=2
 )
 
-# ---------------- SEO ----------------
+# ================== SEO ==================
 title = random.choice([
-    "These Facts Are Insane 😱 #shorts",
-    "You Were Never Taught This 🤯 #shorts",
-    "Trending Facts You Can't Ignore 🔥 #shorts",
-    "This Will Change How You Think 🧠 #shorts"
+    "4 Facts That Will Blow Your Mind 😱 #shorts",
+    "These 60 Seconds Will Change You 🤯 #shorts",
+    "You Were Never Taught This 🔥 #shorts",
 ])
 
 description = (
     "🔥 4 TRENDING FACTS IN 60 SECONDS 🔥\n\n" +
-    "\n".join(f"- {f}" for f in selected_facts) +
-    "\n\n#shorts #trending #facts #viral #ai"
+    "\n".join(f"• {f}" for f in selected_facts) +
+    "\n\n#shorts #trending #facts #viral #science #ai"
 )
 
 tags = [
-    "shorts","trending","facts","viral shorts",
-    "did you know","ai","science","knowledge"
+    "shorts","trending","facts","viral","science",
+    "did you know","mind blowing","ai"
 ]
 
-# ---------------- UPLOAD ----------------
+# ================== UPLOAD ==================
 creds = pickle.load(open(TOKEN_FILE, "rb"))
 youtube = build("youtube", "v3", credentials=creds)
 
@@ -149,4 +146,4 @@ request = youtube.videos().insert(
 )
 
 response = request.execute()
-print("🚀 Uploaded:", response["id"])
+print("🚀 Uploaded Short:", response["id"])
