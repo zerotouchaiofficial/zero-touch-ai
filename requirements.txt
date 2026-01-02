@@ -1,9 +1,5 @@
 moviepy==1.0.3
+edge-tts
 Pillow
-imageio
-imageio-ffmpeg
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-google-api-python-client
 numpy
+requests
