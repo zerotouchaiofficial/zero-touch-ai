@@ -1,0 +1,27 @@
+name: Auto YouTube Shorts (PROD)
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore YouTube token
+        run: |
+          echo "$YOUTUBE_TOKEN_BASE64" | base64 -d > youtube_token.pkl
+        env:
+          YOUTUBE_TOKEN_BASE64: ${{ secrets.YOUTUBE_TOKEN_BASE64 }}
+
+      - run: python auto_runner.py
