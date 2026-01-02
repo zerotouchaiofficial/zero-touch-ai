@@ -1,43 +1,41 @@
-import os
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
+import json, random
+from moviepy.editor import (
+    ImageClip, AudioFileClip,
+    CompositeVideoClip, concatenate_videoclips
+)
 
 WIDTH, HEIGHT = 1080, 1920
 
-with open("current_fact.txt", "r") as f:
-    text = f.read().strip()
+with open("facts.json") as f:
+    facts = json.load(f)
 
-audio = AudioFileClip("audio/voice.mp3")
-duration = max(audio.duration + 1, 6)
+audio = AudioFileClip("voice.mp3")
+duration_per_fact = audio.duration / len(facts)
 
-bg_folder = "backgrounds"
-bg_files = [f for f in os.listdir(bg_folder) if f.endswith((".jpg", ".png"))]
-bg_path = os.path.join(bg_folder, bg_files[0])
+clips = []
 
-bg = (
-    ImageClip(bg_path)
-    .set_duration(duration)
-    .resize(height=HEIGHT)
-    .crop(x_center=WIDTH // 2, width=WIDTH, height=HEIGHT)
-)
+for fact in facts:
+    bg = random.choice([
+        "backgrounds/bg1.jpg",
+        "backgrounds/bg2.jpg",
+        "backgrounds/bg3.jpg"
+    ])
 
-from moviepy.video.VideoClip import ColorClip
+    clip = (
+        ImageClip(bg)
+        .set_duration(duration_per_fact)
+        .resize((WIDTH, HEIGHT))
+    )
 
-overlay = ColorClip(
-    size=(WIDTH, HEIGHT),
-    color=(0, 0, 0)
-).set_opacity(0.35).set_duration(duration)
+    clips.append(clip)
 
-final = CompositeVideoClip([bg, overlay])
-final = final.set_audio(audio)
+video = concatenate_videoclips(clips).set_audio(audio)
 
-os.makedirs("videos", exist_ok=True)
-
-final.write_videofile(
+video.write_videofile(
     "videos/short.mp4",
     fps=30,
     codec="libx264",
-    audio_codec="aac",
-    bitrate="8000k"
+    audio_codec="aac"
 )
 
-print("Video created")
+print("✅ Video created")
