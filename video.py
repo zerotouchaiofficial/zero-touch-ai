@@ -1,70 +1,51 @@
 import os
 import random
-from moviepy.editor import (
-    ColorClip,
-    TextClip,
-    CompositeVideoClip,
-    AudioFileClip
-)
+from moviepy.editor import ColorClip, TextClip, CompositeVideoClip, AudioFileClip
 
-# ---------------- CONFIG ----------------
 WIDTH = 1080
 HEIGHT = 1920
 DURATION = 60
-AUDIO_PATH = "audio/voice.mp3"
+
+FACT_FILE = "current_fact.txt"
+AUDIO = "audio/voice.mp3"
 OUTPUT = "videos/short.mp4"
 
 os.makedirs("videos", exist_ok=True)
 
-# --------------- LOAD FACT ----------------
-with open("current_fact.txt", "r") as f:
+# ---------- SAFE FACT LOAD ----------
+if not os.path.exists(FACT_FILE):
+    raise Exception("❌ Fact file missing — generate.py did not run")
+
+with open(FACT_FILE) as f:
     fact = f.read().strip()
 
 if not fact:
-    raise Exception("❌ No fact found")
+    raise Exception("❌ Fact is empty")
 
-# --------------- BACKGROUND ----------------
-# Random pleasant background colors
-COLORS = [
-    (20, 20, 20),
-    (15, 30, 60),
-    (40, 20, 60),
-    (10, 60, 40),
-    (60, 30, 20)
-]
+# ---------- BACKGROUND ----------
+COLORS = [(20,20,20), (40,20,60), (15,30,60), (10,60,40)]
+bg = ColorClip((WIDTH, HEIGHT), color=random.choice(COLORS), duration=DURATION)
 
-bg_color = random.choice(COLORS)
-
-background = ColorClip(
-    size=(WIDTH, HEIGHT),
-    color=bg_color,
-    duration=DURATION
-)
-
-# --------------- TEXT ----------------
-text = TextClip(
+# ---------- TEXT ----------
+txt = TextClip(
     fact,
     fontsize=70,
     color="white",
     size=(900, None),
     method="caption",
     align="center"
-).set_position("center").set_duration(DURATION)
+).set_duration(DURATION).set_position("center")
 
-# --------------- AUDIO ----------------
-audio = AudioFileClip(AUDIO_PATH).set_duration(DURATION)
+# ---------- AUDIO ----------
+audio = AudioFileClip(AUDIO).set_duration(DURATION)
 
-# --------------- COMPOSE ----------------
-video = CompositeVideoClip([background, text])
-video = video.set_audio(audio)
+video = CompositeVideoClip([bg, txt]).set_audio(audio)
 
 video.write_videofile(
     OUTPUT,
     fps=30,
     codec="libx264",
-    audio_codec="aac",
-    threads=2,
-    preset="medium"
+    audio_codec="aac"
 )
 
-print("✅ Video created successfully")
+print("✅ Video created")
