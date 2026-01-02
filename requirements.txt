@@ -1,7 +1,7 @@
 moviepy==1.0.3
+Pillow
 imageio
 imageio-ffmpeg
-Pillow
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
