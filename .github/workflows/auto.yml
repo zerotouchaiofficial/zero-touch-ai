@@ -1,8 +1,9 @@
-name: Zero Touch Shorts Engine
+name: Zero Touch AI
 
 on:
-  schedule:
-    - cron: "0 1 * * *"   # once daily
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -13,19 +14,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Restore YouTube token
+      🔥 - name: Install dependencies
         run: |
-          echo "$YOUTUBE_TOKEN_BASE64" | base64 -d > youtube_token.pkl
-        env:
-          YOUTUBE_TOKEN_BASE64: ${{ secrets.YOUTUBE_TOKEN_BASE64 }}
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run automation
-        run: python auto_runner.py
+      - name: Generate video
+        run: |
+          python auto_runner.py
