@@ -1,0 +1,31 @@
+name: Zero Touch Shorts Engine
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # once daily
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore YouTube token
+        run: |
+          echo "$YOUTUBE_TOKEN_BASE64" | base64 -d > youtube_token.pkl
+        env:
+          YOUTUBE_TOKEN_BASE64: ${{ secrets.YOUTUBE_TOKEN_BASE64 }}
+
+      - name: Run automation
+        run: python auto_runner.py
