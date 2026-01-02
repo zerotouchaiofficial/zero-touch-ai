@@ -1,9 +1,10 @@
-from gtts import gTTS
+from TTS.api import TTS
+import os
 
-with open("fact.txt") as f:
-    text = f.read()
+tts = TTS(model_name="tts_models/en/vctk/vits")
 
-tts = gTTS(text=text, lang="en")
-tts.save("voice.mp3")
-
-print("🎙 Voice created")
+def make_voice(text):
+    os.makedirs("output", exist_ok=True)
+    out = "output/audio.wav"
+    tts.tts_to_file(text=text, file_path=out)
+    return out
