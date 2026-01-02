@@ -1,40 +1,40 @@
-name: YouTube Shorts Auto (20/day)
+name: Auto YouTube Shorts Generator
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 */1 * * *"   # every 1 hour (24/day)
   workflow_dispatch:
 
 jobs:
-  upload:
+  generate:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-- name: Install dependencies
-  run: |
-    pip uninstall -y pillow
-    pip install pillow==9.5.0
-    pip install moviepy==1.0.3
-    pip install gtts imageio-ffmpeg google-api-python-client google-auth google-auth-oauthlib
-
-
-      - name: Decode YouTube token
+      - name: Install dependencies
         run: |
-          echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 --decode > token.json
+          pip install moviepy pillow imageio imageio-ffmpeg
 
-      - name: Upload 20 shorts with random spacing
+      - name: Generate facts
+        run: python generate.py
+
+      - name: Generate voice
+        run: python voice.py
+
+      - name: Generate video
+        run: python video.py
+
+      - name: Commit output
         run: |
-          for i in {1..20}
-          do
-            echo "Uploading short $i"
-            bash run_once.sh
-            sleep $((RANDOM % 2100 + 600))
-          done
+          git config user.name "bot"
+          git config user.email "bot@github.com"
+          git add videos/*
+          git commit -m "Auto generated short" || echo "Nothing to commit"
+          git push
