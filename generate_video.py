@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import ImageSequenceClip
+import numpy as np
 import os
 
 os.makedirs("videos", exist_ok=True)
@@ -20,16 +21,17 @@ for _ in range(DURATION * FPS):
     except:
         font = ImageFont.load_default()
 
-    text_bbox = draw.multiline_textbbox((0, 0), TEXT, font=font, align="center")
-    text_width = text_bbox[2] - text_bbox[0]
-    text_height = text_bbox[3] - text_bbox[1]
+    bbox = draw.multiline_textbbox((0, 0), TEXT, font=font, align="center")
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
 
-    x = (WIDTH - text_width) // 2
-    y = (HEIGHT - text_height) // 2
+    x = (WIDTH - text_w) // 2
+    y = (HEIGHT - text_h) // 2
 
     draw.multiline_text((x, y), TEXT, fill="white", font=font, align="center")
 
-    frames.append(img)
+    # 🔑 FIX: convert PIL → NumPy
+    frames.append(np.array(img))
 
 clip = ImageSequenceClip(frames, fps=FPS)
 clip.write_videofile(
@@ -38,4 +40,4 @@ clip.write_videofile(
     audio=False
 )
 
-print("✅ Video generated without ImageMagick")
+print("✅ Video generated successfully")
