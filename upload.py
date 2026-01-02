@@ -1,43 +1,27 @@
-import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google.oauth2.credentials import Credentials
+import os
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+youtube = build(
+    "youtube", "v3",
+    developerKey=os.environ["YOUTUBE_API_KEY"]
+)
 
-def get_authenticated_service():
-    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    return build("youtube", "v3", credentials=creds)
-
-def upload_video():
-    if not os.path.exists("videos/short.mp4"):
-        raise Exception("Video not found")
-
-    youtube = get_authenticated_service()
-
-    request = youtube.videos().insert(
-        part="snippet,status",
-        body={
-            "snippet": {
-                "title": "Did you know this? 🤯 #shorts",
-                "description": "Mind-blowing fact #shorts",
-                "tags": ["shorts", "facts", "didyouknow"],
-                "categoryId": "22"
-            },
-            "status": {
-                "privacyStatus": "public",
-                "selfDeclaredMadeForKids": False
-            }
+request = youtube.videos().insert(
+    part="snippet,status",
+    body={
+        "snippet": {
+            "title": "Amazing Facts #shorts",
+            "description": "Did you know? #shorts #facts",
+            "tags": ["shorts", "facts"],
+            "categoryId": "22"
         },
-        media_body=MediaFileUpload(
-            "videos/short.mp4",
-            chunksize=-1,
-            resumable=True
-        )
-    )
+        "status": {
+            "privacyStatus": "public"
+        }
+    },
+    media_body=MediaFileUpload("videos/short.mp4")
+)
 
-    response = request.execute()
-    print("Uploaded:", response["id"])
-
-if __name__ == "__main__":
-    upload_video()
+request.execute()
+print("🚀 Uploaded to YouTube")
