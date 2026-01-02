@@ -1,32 +1,62 @@
-name: YouTube Shorts Factory
+name: Auto YouTube Shorts (20/day)
 
 on:
   schedule:
-    - cron: "0 */1 * * *"   # 24/day
+    # Runs every 3 hours (≈ 8 runs/day)
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 jobs:
-  build:
+  upload:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install deps
-        run: pip install -r requirements.txt
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
-      - name: Generate facts
-        run: python generate.py
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install moviepy gtts google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
 
-      - name: Voice
-        run: python voice.py
+      - name: Decode YouTube token
+        env:
+          YT_TOKEN_B64: ${{ secrets.YT_TOKEN_B64 }}
+        run: |
+          echo "$YT_TOKEN_B64" | base64 --decode > token.json
 
-      - name: Video
-        run: python video.py
+      - name: Run 3 shorts in this cycle
+        run: |
+          for i in 1 2 3
+          do
+            echo "🚀 Creating short $i"
 
-      - name: Upload
-        run: python upload.py
+            python generate.py
+            python voice.py
+            python video.py
+            python upload.py
+
+            # Random sleep 10–35 min (SAFE)
+            SLEEP=$((RANDOM % 1500 + 600))
+            echo "🕒 Sleeping $SLEEP seconds"
+            sleep $SLEEP
+          done
+
+      - name: Commit used facts
+        run: |
+          git config --global user.email "bot@github.com"
+          git config --global user.name "yt-bot"
+          git add facts_used.json current_fact.txt || true
+          git commit -m "Update used facts" || true
+          git push || true
