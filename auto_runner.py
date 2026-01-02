@@ -24,3 +24,7 @@ for i in range(SHORTS_PER_DAY):
 
     print(f"Uploaded {i+1}/{SHORTS_PER_DAY}")
     time.sleep(15)
+
+print("AUTO RUNNER FINISHED SUCCESSFULLY")
+import os
+os._exit(0)
