@@ -1,31 +1,26 @@
-from fact_engine import get_facts
-from voice import generate_voice
-from generate_video import generate_video
-from upload import upload_video
-import random
+import subprocess, time
+from fact_engine import generate_fact, load_used, save_used
 
-TOPICS = [
-    "Space",
-    "Artificial Intelligence",
-    "Human Brain",
-    "Psychology",
-    "History",
-    "Science",
-    "Universe",
-    "Technology"
-]
+SHORTS_PER_DAY = 20
+FACTS_PER_VIDEO = 4
 
-for i in range(20):
-    topic = random.choice(TOPICS)
+used = load_used()
 
-    print(f"▶ Generating short {i+1}/20 on {topic}")
+for i in range(SHORTS_PER_DAY):
+    facts = []
 
-    facts = get_facts(topic)
-    script = " ".join(facts)
+    for _ in range(FACTS_PER_VIDEO):
+        fact = generate_fact(used)
+        facts.append(fact)
+        used.add(fact)
 
-    audio_path = generate_voice(script)
-    video_path = generate_video(audio_path, facts)
+    save_used(used)
 
-    upload_video(video_path, topic)
+    with open("current_fact.txt", "w") as f:
+        f.write(" ".join(facts))
 
-    print(f"✅ Uploaded short {i+1}/20")
+    subprocess.run(["python", "generate_video.py"], check=True)
+    subprocess.run(["python", "upload.py"], check=True)
+
+    print(f"Uploaded {i+1}/{SHORTS_PER_DAY}")
+    time.sleep(15)
