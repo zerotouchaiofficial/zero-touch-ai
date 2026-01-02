@@ -1,12 +1,12 @@
+import json
 from gtts import gTTS
-import os
 
-with open("current_fact.txt", "r") as f:
-    text = f.read().strip()
+with open("facts.json") as f:
+    facts = json.load(f)
 
-os.makedirs("audio", exist_ok=True)
+script = ". ".join(facts) + ". Follow for more amazing facts."
 
-tts = gTTS(text=text, lang="en")
-tts.save("audio/voice.mp3")
+tts = gTTS(script)
+tts.save("voice.mp3")
 
-print("Audio created")
+print("🎙 Voice created")
