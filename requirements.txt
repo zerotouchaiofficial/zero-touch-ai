@@ -1,7 +1,6 @@
-numpy==1.23.5
 moviepy
-TTS
+numpy
+pillow
 google-api-python-client
 google-auth
 google-auth-oauthlib
-google-auth-httplib2
