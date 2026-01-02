@@ -31,7 +31,7 @@ jobs:
       - name: Download video
         run: |
           mkdir -p videos
-          curl -L -o videos/short.mp4 "https://YOUR-DIRECT-MP4-URL-HERE.mp4"
+          curl -L -o videos/short.mp4 "https://github.com/zerotouchaiofficial/zero-touch-ai/releases/download/v2/short.mp4"
 
       - name: Debug files
         run: |
