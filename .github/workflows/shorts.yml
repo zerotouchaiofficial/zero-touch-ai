@@ -1,32 +1,33 @@
-name: YouTube Shorts Bot
+name: YouTube Auto Upload
 
 on:
-  schedule:
-    - cron: "0 */1 * * *"   # every hour
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  shorts:
+  upload:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Install deps
-      run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Restore token
-      run: |
-       echo "${{ secrets.YT_TOKEN }}" | base64 --decode > youtube_token.pkl
-       ls -lh youtube_token.pkl
+      - name: Restore YouTube OAuth token
+        run: |
+          echo "${{ secrets.YOUTUBE_TOKEN_BASE64 }}" | base64 --decode > youtube_token.pkl
 
-    - name: Generate Short
-      run: |
-        python generate.py
-        python voice.py
-        python video.py
-        python upload.py
+      - name: Upload video to YouTube
+        run: |
+          python upload.py
