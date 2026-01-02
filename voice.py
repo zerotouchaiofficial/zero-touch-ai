@@ -1,18 +1,9 @@
 from gtts import gTTS
-from pathlib import Path
 
-FACT_FILE = "current_fact.txt"
-OUT_AUDIO = "audio/voice.mp3"
+with open("fact.txt") as f:
+    text = f.read()
 
-Path("audio").mkdir(exist_ok=True)
+tts = gTTS(text=text, lang="en")
+tts.save("voice.mp3")
 
-with open(FACT_FILE, "r") as f:
-    fact = f.read().strip()
-
-if not fact:
-    raise Exception("❌ No fact found for voice")
-
-tts = gTTS(text=fact, lang="en")
-tts.save(OUT_AUDIO)
-
-print("🎙 Audio created")
+print("🎙 Voice created")
