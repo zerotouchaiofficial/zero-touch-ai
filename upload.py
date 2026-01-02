@@ -1,9 +1,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import pickle
-import os
 
-# Path to video saved by CI
 VIDEO_PATH = "videos/short.mp4"
 TOKEN_FILE = "youtube_token.pkl"
 
@@ -16,9 +14,9 @@ request = youtube.videos().insert(
     part="snippet,status",
     body={
         "snippet": {
-            "title": "Amazing Facts #shorts",
-            "description": "Did you know? #shorts",
-            "tags": ["shorts", "facts"],
+            "title": "Amazing Fact #shorts",
+            "description": "Auto uploaded via CI 🚀",
+            "tags": ["shorts", "facts", "ai"],
             "categoryId": "22"
         },
         "status": {
