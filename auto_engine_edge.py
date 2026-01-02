@@ -1,5 +1,8 @@
 import os, json, random, subprocess, requests, tempfile
-from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageSequenceClip
+from moviepy.editor import (
+    VideoFileClip, AudioFileClip, CompositeVideoClip,
+    ImageSequenceClip, ColorClip
+)
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
@@ -12,7 +15,7 @@ USED_FACTS_FILE = "data/used_facts.json"
 os.makedirs("data", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
 
-# ---------- SAFE FACT SOURCES ----------
+# ---------------- SAFE FACTS ---------------- #
 
 OFFLINE_FACTS = [
     "Octopuses have three hearts and blue blood.",
@@ -26,24 +29,14 @@ OFFLINE_FACTS = [
 ]
 
 def fetch_fact():
-    urls = [
-        "https://uselessfacts.jsph.pl/random.json?language=en"
-    ]
-
-    random.shuffle(urls)
-
-    for url in urls:
-        try:
-            r = requests.get(url, timeout=5)
-            data = r.json()
-            fact = data.get("text", "").strip()
-            if fact:
-                return fact
-        except Exception:
-            pass
-
-    # FINAL FALLBACK (NEVER FAILS)
-    return random.choice(OFFLINE_FACTS)
+    try:
+        r = requests.get(
+            "https://uselessfacts.jsph.pl/random.json?language=en",
+            timeout=5
+        )
+        return r.json().get("text", "").strip()
+    except Exception:
+        return random.choice(OFFLINE_FACTS)
 
 def get_new_facts(count):
     with open(USED_FACTS_FILE) as f:
@@ -54,7 +47,7 @@ def get_new_facts(count):
 
     while len(facts) < count and tries < 50:
         fact = fetch_fact()
-        if fact not in used and len(fact) < 140:
+        if fact and fact not in used and len(fact) < 140:
             facts.append(fact)
             used.add(fact)
         tries += 1
@@ -64,7 +57,7 @@ def get_new_facts(count):
 
     return facts
 
-# ---------- BACKGROUND VIDEO (SAFE CDN) ----------
+# ---------------- BULLETPROOF BACKGROUND ---------------- #
 
 def download_background():
     urls = [
@@ -73,13 +66,33 @@ def download_background():
         "https://cdn.pixabay.com/video/2023/03/29/157230-812991593_large.mp4"
     ]
 
-    url = random.choice(urls)
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    tmp.write(requests.get(url, timeout=15).content)
-    tmp.close()
-    return tmp.name
+    for url in urls:
+        try:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            with requests.get(url, stream=True, timeout=15) as r:
+                if r.status_code != 200:
+                    continue
+                for chunk in r.iter_content(chunk_size=8192):
+                    tmp.write(chunk)
+            tmp.close()
 
-# ---------- VOICE ----------
+            # size check (must be > 1MB)
+            if os.path.getsize(tmp.name) > 1_000_000:
+                return tmp.name
+        except Exception:
+            pass
+
+    # FINAL FAILSAFE: animated solid background
+    return None
+
+def fallback_background(duration):
+    return ColorClip(
+        size=(WIDTH, HEIGHT),
+        color=(20, 20, 20),
+        duration=duration
+    )
+
+# ---------------- VOICE ---------------- #
 
 def generate_voice(text, output):
     subprocess.run([
@@ -89,7 +102,7 @@ def generate_voice(text, output):
         "--write-media", output
     ], check=True)
 
-# ---------- TEXT RENDER ----------
+# ---------------- TEXT ---------------- #
 
 def render_text(text):
     img = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
@@ -116,7 +129,7 @@ def render_text(text):
 
     return np.array(img)
 
-# ---------- MAIN ----------
+# ---------------- MAIN ---------------- #
 
 def main():
     facts = get_new_facts(FACTS_PER_VIDEO)
@@ -130,7 +143,10 @@ def main():
     duration = min(60, audio.duration)
 
     bg_path = download_background()
-    bg = VideoFileClip(bg_path).resize((WIDTH, HEIGHT)).subclip(0, duration)
+    if bg_path:
+        bg = VideoFileClip(bg_path).resize((WIDTH, HEIGHT)).subclip(0, duration)
+    else:
+        bg = fallback_background(duration)
 
     frames = []
     sec_per_fact = duration / len(facts)
