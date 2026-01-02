@@ -1,38 +1,42 @@
-from moviepy.editor import *
-import os
-import random
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+from moviepy.editor import ImageSequenceClip
+import textwrap, os
 
-def generate_video(audio_path, facts):
-    audio = AudioFileClip(audio_path)
+W, H = 720, 1280
+FPS = 30
+DURATION = 60  # seconds
+FRAMES = FPS * DURATION
 
-    bg_files = os.listdir("backgrounds")
-    bg_path = f"backgrounds/{random.choice(bg_files)}"
+os.makedirs("videos", exist_ok=True)
 
-    bg = ImageClip(bg_path).set_duration(audio.duration).resize((720,1280))
+with open("current_fact.txt", "r") as f:
+    facts = f.read().split(".")[:-1]
 
-    duration_per = audio.duration / len(facts)
-    text_clips = []
+frames = []
+font = ImageFont.load_default()
 
-    for i, line in enumerate(facts):
-        txt = TextClip(
-            line,
-            fontsize=60,
-            color="white",
-            size=(680, 1180),
-            method="caption"
-        ).set_start(i * duration_per).set_duration(duration_per).set_position("center")
-        text_clips.append(txt)
+for i in range(FRAMES):
+    img = Image.new("RGB", (W, H), (20, 20, 20))
+    draw = ImageDraw.Draw(img)
 
-    final = CompositeVideoClip([bg, *text_clips]).set_audio(audio)
+    fact_index = min(i // (FRAMES // len(facts)), len(facts) - 1)
+    text = facts[fact_index].strip()
 
-    os.makedirs("output", exist_ok=True)
-    out = "output/short.mp4"
+    wrapped = textwrap.fill(text, width=30)
+    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font)
+    x = (W - bbox[2]) // 2
+    y = (H - bbox[3]) // 2
 
-    final.write_videofile(
-        out,
-        fps=30,
-        codec="libx264",
-        audio_codec="aac"
-    )
+    draw.multiline_text((x, y), wrapped, font=font, fill=(255, 255, 255), align="center")
+    frames.append(np.array(img))
 
-    return out
+clip = ImageSequenceClip(frames, fps=FPS)
+clip.write_videofile(
+    "videos/short.mp4",
+    codec="libx264",
+    audio=False,
+    fps=FPS,
+    verbose=False,
+    logger=None
+)
