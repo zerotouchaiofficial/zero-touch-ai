@@ -1,16 +1,24 @@
-import os, json, random, subprocess, textwrap, pickle
+import os
+import json
+import random
+import subprocess
+import textwrap
+import pickle
 import numpy as np
+
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import ImageSequenceClip, AudioFileClip, concatenate_audioclips
+from moviepy.editor import (
+    ImageSequenceClip,
+    AudioFileClip,
+    concatenate_audioclips
+)
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# ================== CONFIG ==================
+# ================= CONFIG =================
 WIDTH, HEIGHT = 720, 1280
 FPS = 30
-TOTAL_DURATION = 60
-FACTS_PER_VIDEO = 4
-SECONDS_PER_FACT = TOTAL_DURATION // FACTS_PER_VIDEO
+MAX_DURATION = 60
 
 VIDEO_PATH = "videos/short.mp4"
 TOKEN_FILE = "youtube_token.pkl"
@@ -18,7 +26,7 @@ USED_FACTS_FILE = "used_facts.json"
 
 os.makedirs("videos", exist_ok=True)
 
-# ================== FACT POOL ==================
+# ================= FACT POOL =================
 FACTS = [
     "NASA confirmed that space smells like burning metal",
     "Scientists discovered a planet where it rains diamonds",
@@ -35,68 +43,96 @@ FACTS = [
 used = json.load(open(USED_FACTS_FILE)) if os.path.exists(USED_FACTS_FILE) else []
 available = [f for f in FACTS if f not in used]
 
-if len(available) < FACTS_PER_VIDEO:
-    raise Exception("❌ Not enough unused facts")
+if len(available) < 3:
+    raise Exception("❌ Not enough unused facts left")
 
-selected_facts = random.sample(available, FACTS_PER_VIDEO)
-used.extend(selected_facts)
-json.dump(used, open(USED_FACTS_FILE, "w"))
+random.shuffle(available)
 
-# ================== VOICE (SYNCED) ==================
-audio_clips = []
-
-for i, fact in enumerate(selected_facts):
-    audio_path = f"videos/voice_{i}.wav"
-    subprocess.run(
-        ["espeak", "-s", "140", "-p", "45", "-w", audio_path, fact],
-        check=True
-    )
-    clip = AudioFileClip(audio_path).set_duration(SECONDS_PER_FACT)
-    audio_clips.append(clip)
-
-final_audio = concatenate_audioclips(audio_clips)
-
-# ================== FONT ==================
+# ================= FONT =================
 try:
     font = ImageFont.truetype("DejaVuSans-Bold.ttf", 64)
 except:
     font = ImageFont.load_default()
 
-# ================== TEXT DRAW ==================
-def draw_fact(draw, text, frame_idx):
+# ================= TEXT DRAW =================
+def draw_text(draw, text, frame_index):
     wrapped = textwrap.wrap(text, width=18)
     block = "\n".join(wrapped)
 
     bbox = draw.multiline_textbbox((0, 0), block, font=font, align="center")
     text_w = bbox[2] - bbox[0]
 
-    # TEXT ANIMATION (slide up + fade illusion)
-    base_y = HEIGHT // 2 - 100
-    anim_offset = int(np.sin(frame_idx / 8) * 20)
+    # simple floating animation
+    y = HEIGHT // 2 - 120 + int(np.sin(frame_index / 8) * 20)
     x = (WIDTH - text_w) // 2
-    y = base_y + anim_offset
 
-    draw.multiline_text((x, y), block, fill="white", font=font, align="center")
+    draw.multiline_text(
+        (x, y),
+        block,
+        fill="white",
+        font=font,
+        align="center"
+    )
 
-# ================== VIDEO FRAMES ==================
+# ================= GENERATE VOICE + FRAMES =================
+audio_clips = []
 frames = []
+total_time = 0.0
+
 bg_colors = [
     (15, 15, 15),
     (30, 60, 90),
     (90, 30, 60),
-    (20, 80, 60)
+    (20, 80, 60),
 ]
 
-for fact_index, fact in enumerate(selected_facts):
+fact_index = 0
+
+for fact in available:
+    if total_time >= MAX_DURATION:
+        break
+
+    voice_path = f"videos/voice_{fact_index}.wav"
+
+    subprocess.run(
+        ["espeak", "-s", "140", "-p", "45", "-w", voice_path, fact],
+        check=True
+    )
+
+    audio = AudioFileClip(voice_path)
+    duration = audio.duration
+
+    # stop if exceeding 60s
+    if total_time + duration > MAX_DURATION:
+        duration = MAX_DURATION - total_time
+        audio = audio.subclip(0, duration)
+
+    audio_clips.append(audio)
+
+    frame_count = int(duration * FPS)
     bg = bg_colors[fact_index % len(bg_colors)]
 
-    for f in range(SECONDS_PER_FACT * FPS):
+    for f in range(frame_count):
         img = Image.new("RGB", (WIDTH, HEIGHT), bg)
         draw = ImageDraw.Draw(img)
 
-        draw_fact(draw, f"FACT #{fact_index+1}\n\n{fact}", f)
+        draw_text(
+            draw,
+            f"FACT #{fact_index + 1}\n\n{fact}",
+            f
+        )
 
         frames.append(np.array(img))
+
+    total_time += duration
+    used.append(fact)
+    fact_index += 1
+
+json.dump(used, open(USED_FACTS_FILE, "w"))
+
+# ================= FINAL VIDEO =================
+final_audio = concatenate_audioclips(audio_clips)
+final_audio = final_audio.set_duration(min(final_audio.duration, MAX_DURATION))
 
 clip = ImageSequenceClip(frames, fps=FPS)
 clip = clip.set_audio(final_audio)
@@ -109,25 +145,25 @@ clip.write_videofile(
     threads=2
 )
 
-# ================== SEO ==================
+# ================= SEO =================
 title = random.choice([
-    "4 Facts That Will Blow Your Mind 😱 #shorts",
-    "These 60 Seconds Will Change You 🤯 #shorts",
+    "These Facts Will Blow Your Mind 😱 #shorts",
+    "60 Seconds of Insane Facts 🤯 #shorts",
     "You Were Never Taught This 🔥 #shorts",
 ])
 
 description = (
-    "🔥 4 TRENDING FACTS IN 60 SECONDS 🔥\n\n" +
-    "\n".join(f"• {f}" for f in selected_facts) +
-    "\n\n#shorts #trending #facts #viral #science #ai"
+    "🔥 TRENDING FACTS IN 60 SECONDS 🔥\n\n"
+    + "\n".join(f"• {f}" for f in used[-fact_index:])
+    + "\n\n#shorts #trending #facts #viral #science"
 )
 
 tags = [
-    "shorts","trending","facts","viral","science",
-    "did you know","mind blowing","ai"
+    "shorts", "trending", "facts", "viral",
+    "did you know", "science", "mind blowing"
 ]
 
-# ================== UPLOAD ==================
+# ================= UPLOAD =================
 creds = pickle.load(open(TOKEN_FILE, "rb"))
 youtube = build("youtube", "v3", credentials=creds)
 
