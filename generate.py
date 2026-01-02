@@ -1,18 +1,28 @@
-import random
+from moviepy.editor import ColorClip, TextClip, CompositeVideoClip
+import os
 
-FACTS = [
-    "Bananas are berries",
-    "Octopuses have three hearts",
-    "Honey never spoils",
-    "Wombat poop is cube shaped",
-    "Oxford University is older than the Aztecs",
-    "Sharks existed before trees",
-    "Hot water can freeze faster than cold water",
-]
+os.makedirs("videos", exist_ok=True)
 
-fact = random.choice(FACTS)
+TEXT = "Did you know?\nOctopus have 3 hearts 🐙"
 
-with open("fact.txt", "w") as f:
-    f.write(fact)
+video = ColorClip(size=(720, 1280), color=(0, 0, 0), duration=6)
 
-print("✅ Fact:", fact)
+text = TextClip(
+    TEXT,
+    fontsize=60,
+    color="white",
+    method="caption",
+    size=(650, None),
+    align="center"
+).set_position("center").set_duration(6)
+
+final = CompositeVideoClip([video, text])
+
+final.write_videofile(
+    "videos/short.mp4",
+    fps=30,
+    codec="libx264",
+    audio=False
+)
+
+print("✅ Video generated: videos/short.mp4")
