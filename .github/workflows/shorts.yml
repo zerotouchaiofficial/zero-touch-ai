@@ -1,42 +1,37 @@
-name: YouTube Auto Upload
+name: AUTO YouTube Shorts
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
-  upload:
+  auto:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Restore YouTube OAuth token
+      - name: Restore YouTube token
         run: |
           echo "${{ secrets.YOUTUBE_TOKEN_BASE64 }}" | base64 --decode > youtube_token.pkl
 
-      - name: Download video
+      - name: Generate video
         run: |
-          mkdir -p videos
-          curl -L -o videos/short.mp4 "https://github.com/zerotouchaiofficial/zero-touch-ai/releases/download/v2/short.mp4"
+          python generate_video.py
 
-      - name: Debug files
+      - name: Debug
         run: |
           ls -R
 
-      - name: Upload video to YouTube
+      - name: Upload to YouTube
         run: |
           python upload.py
