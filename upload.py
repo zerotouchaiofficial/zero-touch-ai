@@ -3,8 +3,10 @@ from googleapiclient.http import MediaFileUpload
 import pickle
 import os
 
+VIDEO_PATH = "videos/short.mp4"
 TOKEN_FILE = "youtube_token.pkl"
 
+# load oauth token
 with open(TOKEN_FILE, "rb") as f:
     creds = pickle.load(f)
 
@@ -24,7 +26,7 @@ request = youtube.videos().insert(
         }
     },
     media_body=MediaFileUpload(
-        "videos/short.mp4",
+        VIDEO_PATH,
         mimetype="video/mp4",
         resumable=True
     )
