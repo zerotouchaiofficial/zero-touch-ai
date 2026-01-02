@@ -1,40 +1,32 @@
-name: Auto YouTube Shorts Generator
+name: YouTube Shorts Factory
 
 on:
   schedule:
-    - cron: "0 */1 * * *"   # every 1 hour (24/day)
+    - cron: "0 */1 * * *"   # 24/day
   workflow_dispatch:
 
 jobs:
-  generate:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install moviepy pillow imageio imageio-ffmpeg
+      - name: Install deps
+        run: pip install -r requirements.txt
 
       - name: Generate facts
         run: python generate.py
 
-      - name: Generate voice
+      - name: Voice
         run: python voice.py
 
-      - name: Generate video
+      - name: Video
         run: python video.py
 
-      - name: Commit output
-        run: |
-          git config user.name "bot"
-          git config user.email "bot@github.com"
-          git add videos/*
-          git commit -m "Auto generated short" || echo "Nothing to commit"
-          git push
+      - name: Upload
+        run: python upload.py
