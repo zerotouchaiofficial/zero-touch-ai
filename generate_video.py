@@ -48,3 +48,13 @@ clip.write_videofile(
     audio=False,
     fps=FPS
 )
+
+# --- FORCE CLEAN EXIT FOR GITHUB ACTIONS ---
+import os
+import sys
+import time
+
+time.sleep(1)
+sys.stdout.flush()
+sys.stderr.flush()
+os._exit(0)
